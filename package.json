@@ -1,0 +1,55 @@
+{
+  "name": "claude-quota-bar",
+  "displayName": "Claude Quota Bar",
+  "description": "Quota settimanale di Claude Code nella barra di stato, con l'avanzamento teorico uniforme sovrapposto alla barra",
+  "version": "0.1.0",
+  "publisher": "tiz",
+  "private": true,
+  "license": "MIT",
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claudeQuotaBar.refresh",
+        "title": "Claude Quota: aggiorna adesso"
+      }
+    ],
+    "configuration": {
+      "title": "Claude Quota Bar",
+      "properties": {
+        "claudeQuotaBar.pollMinutes": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "description": "Ogni quanti minuti interrogare l'endpoint di usage. L'endpoint è condiviso con Claude Code: valori bassi si traducono in 429 e backoff."
+        },
+        "claudeQuotaBar.barWidth": {
+          "type": "number",
+          "default": 12,
+          "minimum": 4,
+          "maximum": 40,
+          "description": "Larghezza della barra in caratteri."
+        },
+        "claudeQuotaBar.showFiveHour": {
+          "type": "boolean",
+          "default": false,
+          "description": "Mostra anche la finestra di 5 ore accanto a quella settimanale."
+        },
+        "claudeQuotaBar.alignment": {
+          "type": "string",
+          "enum": ["left", "right"],
+          "default": "right",
+          "description": "Lato della barra di stato in cui comparire."
+        },
+        "claudeQuotaBar.priority": {
+          "type": "number",
+          "default": 100,
+          "description": "Priorità nella barra di stato: più alto sta più a sinistra nel proprio gruppo."
+        }
+      }
+    }
+  }
+}
