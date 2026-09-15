@@ -4,8 +4,17 @@
   "description": "Quota settimanale di Claude Code nella barra di stato, con l'avanzamento teorico uniforme sovrapposto alla barra",
   "version": "0.1.0",
   "publisher": "tiz",
-  "private": true,
   "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tizi-guitar/claude-quota-bar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tizi-guitar/claude-quota-bar/issues"
+  },
+  "homepage": "https://github.com/tizi-guitar/claude-quota-bar#readme",
+  "keywords": ["claude code", "claude", "anthropic", "quota", "status bar", "usage"],
   "engines": { "vscode": "^1.80.0" },
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
