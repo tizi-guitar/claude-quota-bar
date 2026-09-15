@@ -14,6 +14,11 @@ sulla stessa barra.
 Se il riempimento sta a sinistra del marcatore c'è margine, se lo supera si sta
 consumando più in fretta di quanto la settimana permetta.
 
+Altre estensioni per la quota di Claude Code mostrano la percentuale consumata
+e il countdown al reset, ma nessuna confronta il consumo con un ritmo
+uniforme: è la barra a dirti "stai andando bene" o "stai bruciando in fretta",
+non solo "sei al 40%".
+
 ## Perché esiste
 
 Claude Code espone `rate_limits` agli script di status line, ma quelle status
