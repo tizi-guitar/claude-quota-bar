@@ -1,65 +1,67 @@
 # Claude Quota Bar
 
-Barra di stato per VS Code che mostra quanto della **quota settimanale di Claude
-Code** è stato consumato, con l'**avanzamento teorico uniforme** sovrapposto
-sulla stessa barra.
+VS Code status bar item that shows how much of your **Claude Code weekly
+quota** has been used, with the **theoretical uniform pace** overlaid on the
+same bar.
 
-    7g ████▍┃░░░░░░ 37% ▼12
+    7d ████▍┃░░░░░░ 37% ▼12
 
-- il riempimento `█` è il consumo reale della finestra di 7 giorni;
-- il marcatore `┃` è dove sarebbe il consumo se fosse perfettamente uniforme
-  nel tempo, cioè la frazione di settimana già trascorsa;
-- `▼12` / `▲12` è la differenza in punti percentuali: sotto o sopra quel ritmo.
+- the fill `█` is the real usage of the 7-day window;
+- the `┃` marker is where usage would be if it were perfectly uniform over
+  time, i.e. the fraction of the week already elapsed;
+- `▼12` / `▲12` is the difference in percentage points: below or above that
+  pace.
 
-Se il riempimento sta a sinistra del marcatore c'è margine, se lo supera si sta
-consumando più in fretta di quanto la settimana permetta.
+If the fill sits to the left of the marker, you have margin; if it passes it,
+you're burning through the week faster than it allows.
 
-Altre estensioni per la quota di Claude Code mostrano la percentuale consumata
-e il countdown al reset, ma nessuna confronta il consumo con un ritmo
-uniforme: è la barra a dirti "stai andando bene" o "stai bruciando in fretta",
-non solo "sei al 40%".
+Other Claude Code quota extensions show the percentage used and a countdown
+to reset, but none of them compare usage against a uniform pace: this bar
+tells you "you're on track" or "you're burning fast", not just "you're at
+40%".
 
-## Perché esiste
+## Why it exists
 
-Claude Code espone `rate_limits` agli script di status line, ma quelle status
-line sono una funzione del TUI nel terminale: l'estensione VS Code non le
-renderizza. Questa estensione porta la stessa informazione nella barra di stato
-dell'editor, aggiungendo il confronto con il ritmo uniforme che la status line
-nativa non fa.
+Claude Code exposes `rate_limits` to status line scripts, but those status
+lines are a terminal TUI feature — the VS Code extension doesn't render
+them. This extension brings the same information into the editor's status
+bar, adding the uniform-pace comparison that the native status line doesn't
+do.
 
-## Da dove vengono i dati
+## Where the data comes from
 
-`GET https://api.anthropic.com/api/oauth/usage`, lo stesso endpoint che alimenta
-`/usage`, autenticato con il token OAuth che Claude Code tiene in
-`~/.claude/.credentials.json`. Il token viene riletto dal disco a ogni
-tentativo e non viene mai rinnovato da qui: il refresh resta compito di Claude
-Code, così non si interferisce con la sua sessione.
+`GET https://api.anthropic.com/api/oauth/usage`, the same endpoint that
+powers `/usage`, authenticated with the OAuth token Claude Code keeps in
+`~/.claude/.credentials.json`. The token is re-read from disk on every
+attempt and never refreshed from here: refreshing stays Claude Code's job, so
+this extension doesn't interfere with its session.
 
-L'endpoint ha un cooldown per account, condiviso con Claude Code e con ogni
-altra estensione che lo interroga: un 429 non è un errore ma un "riprova più
-tardi". In quel caso la barra continua a mostrare l'ultimo dato noto e, se è
-vecchio, lo segnala con `⚠` e l'età. All'avvio, prima del primo fetch, si parte
-dalla cache che Claude Code tiene in `~/.claude.json`
+The endpoint has a per-account cooldown, shared with Claude Code and with any
+other extension that queries it: a 429 isn't an error, it's a "try again
+later". When that happens, the bar keeps showing the last known value and, if
+it's old, flags it with `⚠` and its age. On startup, before the first fetch,
+it starts from the cache Claude Code itself keeps in `~/.claude.json`
 (`cachedUsageUtilization`).
 
-Il ritmo teorico invece non dipende dalla rete: si ricava da `resets_at` meno
-sette giorni e si aggiorna ogni 30 secondi.
+The theoretical pace, on the other hand, doesn't depend on the network: it's
+derived from `resets_at` minus seven days, and refreshes every 30 seconds.
 
-## Impostazioni
+## Settings
 
-| chiave | default | cosa fa |
+| key | default | what it does |
 |---|---|---|
-| `claudeQuotaBar.pollMinutes` | 5 | minuti fra due fetch (con backoff fino a 10 min dopo un 429) |
-| `claudeQuotaBar.barWidth` | 12 | larghezza della barra in caratteri |
-| `claudeQuotaBar.showFiveHour` | false | mostra anche la finestra di 5 ore |
-| `claudeQuotaBar.alignment` | right | lato della barra di stato |
-| `claudeQuotaBar.priority` | 100 | posizione nel gruppo |
+| `claudeQuotaBar.pollMinutes` | 5 | minutes between fetches (backs off up to 10 min after a 429) |
+| `claudeQuotaBar.barWidth` | 12 | bar width in characters |
+| `claudeQuotaBar.showFiveHour` | false | also show the 5-hour window |
+| `claudeQuotaBar.alignment` | right | which side of the status bar |
+| `claudeQuotaBar.priority` | 100 | position within the group |
 
-Clic sulla barra: aggiorna subito. Il tooltip riporta consumo, ritmo, delta,
-reset, età del dato e finestra di 5 ore. Il colore di sfondo diventa giallo
-oltre +5 punti di scostamento e rosso oltre +15 o sopra il 90% di quota.
+Click the bar to refresh immediately. The tooltip reports usage, pace, delta,
+reset time, data age, and the 5-hour window. The background color turns
+yellow past +5 percentage points off pace, and red past +15 or above 90% of
+quota.
 
-## File
+## Files
 
-    extension.js   attivazione, fetch, cache, rendering nella barra di stato
-    quota.js       logica pura (ritmo, barra, soglie), testabile con node
+    extension.js   activation, fetch, cache, status bar rendering
+    quota.js       pure logic (pace, bar, thresholds), testable with node

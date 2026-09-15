@@ -1,7 +1,7 @@
 {
   "name": "claude-quota-bar",
   "displayName": "Claude Quota Bar",
-  "description": "Quota settimanale di Claude Code nella barra di stato, con l'avanzamento teorico uniforme sovrapposto alla barra",
+  "description": "Claude Code weekly quota in the status bar, with the theoretical uniform pace overlaid on the bar",
   "version": "0.1.0",
   "publisher": "tiz",
   "license": "MIT",
@@ -23,7 +23,7 @@
     "commands": [
       {
         "command": "claudeQuotaBar.refresh",
-        "title": "Claude Quota: aggiorna adesso"
+        "title": "Claude Quota: refresh now"
       }
     ],
     "configuration": {
@@ -33,30 +33,30 @@
           "type": "number",
           "default": 5,
           "minimum": 1,
-          "description": "Ogni quanti minuti interrogare l'endpoint di usage. L'endpoint è condiviso con Claude Code: valori bassi si traducono in 429 e backoff."
+          "description": "How often (in minutes) to query the usage endpoint. The endpoint is shared with Claude Code: low values lead to 429s and backoff."
         },
         "claudeQuotaBar.barWidth": {
           "type": "number",
           "default": 12,
           "minimum": 4,
           "maximum": 40,
-          "description": "Larghezza della barra in caratteri."
+          "description": "Bar width in characters."
         },
         "claudeQuotaBar.showFiveHour": {
           "type": "boolean",
           "default": false,
-          "description": "Mostra anche la finestra di 5 ore accanto a quella settimanale."
+          "description": "Also show the 5-hour window next to the weekly one."
         },
         "claudeQuotaBar.alignment": {
           "type": "string",
           "enum": ["left", "right"],
           "default": "right",
-          "description": "Lato della barra di stato in cui comparire."
+          "description": "Which side of the status bar to appear on."
         },
         "claudeQuotaBar.priority": {
           "type": "number",
           "default": 100,
-          "description": "Priorità nella barra di stato: più alto sta più a sinistra nel proprio gruppo."
+          "description": "Priority within the status bar: higher sits further left within its group."
         }
       }
     }

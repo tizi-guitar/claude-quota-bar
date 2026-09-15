@@ -1,18 +1,19 @@
 'use strict';
-// Logica pura: nessun require di vscode, così è testabile con node da riga di comando.
+// Pure logic: no vscode require, so it's testable with plain node.
 
 const WEEK_MS = 7 * 24 * 3600 * 1000;
 const FIVE_HOUR_MS = 5 * 3600 * 1000;
 const BLOCKS = ['▏', '▎', '▍', '▌', '▋', '▊', '▉', '█'];
 
-/** Millisecondi di durata nominale della finestra. */
+/** Nominal duration of the window, in milliseconds. */
 function windowSpan(key) {
   return key === 'five_hour' ? FIVE_HOUR_MS : WEEK_MS;
 }
 
 /**
- * Consumo, ritmo teorico uniforme e delta di una finestra di quota.
- * `utilization` è 0-100 e `resets_at` un ISO 8601 (come li espone Claude Code).
+ * Usage, theoretical uniform pace, and delta for a quota window.
+ * `utilization` is 0-100 and `resets_at` an ISO 8601 string (as exposed by
+ * Claude Code).
  */
 function windowStats(win, key, now = Date.now()) {
   if (!win || typeof win.utilization !== 'number') return null;
@@ -34,9 +35,9 @@ function windowStats(win, key, now = Date.now()) {
 }
 
 /**
- * Barra a larghezza fissa: il riempimento è il consumo reale, il marcatore ┃
- * l'avanzamento teorico uniforme. Sovrapposti sulla stessa barra, così si legge
- * a colpo d'occhio se si sta consumando più o meno del ritmo costante.
+ * Fixed-width bar: the fill is real usage, the `┃` marker is the theoretical
+ * uniform pace. Overlaid on the same bar so it's readable at a glance whether
+ * usage is running ahead of or behind a constant pace.
  */
 function renderBar(used, pace, width) {
   const filled = (Math.max(0, Math.min(100, used)) / 100) * width;
@@ -54,14 +55,14 @@ function renderBar(used, pace, width) {
   return cells.join('');
 }
 
-/** 'sotto' | 'pari' | 'sopra' | 'critico': guida il colore dell'item. */
+/** 'below' | 'even' | 'above' | 'critical': drives the item's color. */
 function severity(used, delta) {
-  if (used >= 90) return 'critico';
-  if (delta === null) return 'pari';
-  if (delta > 15) return 'critico';
-  if (delta > 5) return 'sopra';
-  if (delta < -5) return 'sotto';
-  return 'pari';
+  if (used >= 90) return 'critical';
+  if (delta === null) return 'even';
+  if (delta > 15) return 'critical';
+  if (delta > 5) return 'above';
+  if (delta < -5) return 'below';
+  return 'even';
 }
 
 function humanDuration(ms) {
@@ -69,26 +70,26 @@ function humanDuration(ms) {
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
-  if (d) return `${d}g${h}h`;
+  if (d) return `${d}d${h}h`;
   if (h) return `${h}h${String(m).padStart(2, '0')}m`;
   return `${m}m`;
 }
 
 function humanAge(ms) {
   const s = Math.max(0, Math.round(ms / 1000));
-  if (s < 90) return 'ora';
+  if (s < 90) return 'now';
   const m = Math.round(s / 60);
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
-  return `${Math.floor(h / 24)}g`;
+  return `${Math.floor(h / 24)}d`;
 }
 
 /**
- * Testo per la status bar. `stale` allunga il testo con un ⚠ e l'età del dato,
- * perché una percentuale vecchia letta come attuale è peggio di nessun dato.
+ * Status bar text. `staleMs` appends a ⚠ and the data's age, because an old
+ * percentage read as current is worse than no data at all.
  */
-function statusText(stats, { label = '7g', width = 12, staleMs = null } = {}) {
+function statusText(stats, { label = '7d', width = 12, staleMs = null } = {}) {
   const bar = renderBar(stats.used, stats.pace, width);
   let text = `${label} ${bar} ${Math.round(stats.used)}%`;
   if (stats.delta !== null) {

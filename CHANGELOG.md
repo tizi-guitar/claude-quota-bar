@@ -2,9 +2,9 @@
 
 ## 0.1.0
 
-- Prima versione pubblica: barra di stato con quota settimanale (e, a scelta,
-  quella di 5 ore) di Claude Code, con marcatore del ritmo di consumo teorico
-  uniforme sovrapposto.
-- Lettura di `GET /api/oauth/usage` con il token OAuth locale di Claude Code,
-  cache e backoff crescente sui 429, fallback su `~/.claude.json` quando
-  l'endpoint non risponde.
+- First public release: status bar item showing the Claude Code weekly quota
+  (and, optionally, the 5-hour one) with a theoretical uniform-pace marker
+  overlaid on top.
+- Reads `GET /api/oauth/usage` with Claude Code's local OAuth token, caches
+  results, backs off increasingly on 429s, and falls back to
+  `~/.claude.json` when the endpoint doesn't respond.
