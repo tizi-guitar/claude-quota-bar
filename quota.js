@@ -4,6 +4,10 @@
 const WEEK_MS = 7 * 24 * 3600 * 1000;
 const FIVE_HOUR_MS = 5 * 3600 * 1000;
 const BLOCKS = ['▏', '▎', '▍', '▌', '▋', '▊', '▉', '█'];
+// A status bar item has a single text color, so the only way to give the pace
+// marker its own color is a color emoji. A full square also fills its whole
+// cell, unlike the thin `┃`, which left dark gaps on both sides of the line.
+const DEFAULT_MARKER = '🟦';
 
 /** Nominal duration of the window, in milliseconds. */
 function windowSpan(key) {
@@ -35,11 +39,11 @@ function windowStats(win, key, now = Date.now()) {
 }
 
 /**
- * Fixed-width bar: the fill is real usage, the `┃` marker is the theoretical
+ * Fixed-width bar: the fill is real usage, the marker is the theoretical
  * uniform pace. Overlaid on the same bar so it's readable at a glance whether
  * usage is running ahead of or behind a constant pace.
  */
-function renderBar(used, pace, width) {
+function renderBar(used, pace, width, marker = DEFAULT_MARKER) {
   const filled = (Math.max(0, Math.min(100, used)) / 100) * width;
   const cells = [];
   for (let i = 0; i < width; i++) {
@@ -50,7 +54,7 @@ function renderBar(used, pace, width) {
   }
   if (pace !== null && pace !== undefined) {
     const pos = Math.max(0, Math.min(width - 1, Math.floor((Math.max(0, Math.min(100, pace)) / 100) * width)));
-    cells[pos] = '┃';
+    cells[pos] = marker;
   }
   return cells.join('');
 }
@@ -89,8 +93,8 @@ function humanAge(ms) {
  * Status bar text. `staleMs` appends a ⚠ and the data's age, because an old
  * percentage read as current is worse than no data at all.
  */
-function statusText(stats, { label = '7d', width = 12, staleMs = null } = {}) {
-  const bar = renderBar(stats.used, stats.pace, width);
+function statusText(stats, { label = '7d', width = 12, staleMs = null, marker = DEFAULT_MARKER } = {}) {
+  const bar = renderBar(stats.used, stats.pace, width, marker);
   let text = `${label} ${bar} ${Math.round(stats.used)}%`;
   if (stats.delta !== null) {
     const sign = stats.delta < -0.5 ? '▼' : stats.delta > 0.5 ? '▲' : '=';
@@ -101,6 +105,6 @@ function statusText(stats, { label = '7d', width = 12, staleMs = null } = {}) {
 }
 
 module.exports = {
-  WEEK_MS, FIVE_HOUR_MS,
+  WEEK_MS, FIVE_HOUR_MS, DEFAULT_MARKER,
   windowSpan, windowStats, renderBar, severity, humanDuration, humanAge, statusText,
 };

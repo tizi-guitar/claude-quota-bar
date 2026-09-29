@@ -2,7 +2,7 @@
   "name": "claude-quota-bar",
   "displayName": "Claude Quota Bar",
   "description": "Claude Code weekly quota in the status bar, with the theoretical uniform pace overlaid on the bar",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "TizzCode",
   "license": "MIT",
   "icon": "icon.png",
@@ -24,6 +24,10 @@
       {
         "command": "claudeQuotaBar.refresh",
         "title": "Claude Quota: refresh now"
+      },
+      {
+        "command": "claudeQuotaBar.showWebPage",
+        "title": "Claude Quota: show web page URL (for phone/browser)"
       }
     ],
     "configuration": {
@@ -47,6 +51,21 @@
           "default": false,
           "description": "Also show the 5-hour window next to the weekly one."
         },
+        "claudeQuotaBar.paceMarker": {
+          "type": "string",
+          "enum": ["🟦", "🟪", "🟩", "🟨", "🟧", "🟥", "┃"],
+          "enumDescriptions": [
+            "Blue square",
+            "Purple square",
+            "Green square",
+            "Yellow square",
+            "Orange square",
+            "Red square",
+            "Thin line in the status bar's text color (the original marker)"
+          ],
+          "default": "🟦",
+          "description": "Marker for the theoretical uniform pace. The colored squares are emoji, so they keep their own color regardless of the status bar theme."
+        },
         "claudeQuotaBar.alignment": {
           "type": "string",
           "enum": ["left", "right"],
@@ -57,6 +76,23 @@
           "type": "number",
           "default": 100,
           "description": "Priority within the status bar: higher sits further left within its group."
+        },
+        "claudeQuotaBar.webServer.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Serve a web page with the same bar, to check the quota from a phone or another device's browser. It only exposes quota percentages, never the token, but anyone who can reach the port can see them."
+        },
+        "claudeQuotaBar.webServer.host": {
+          "type": "string",
+          "default": "0.0.0.0",
+          "description": "Address the web page listens on: 0.0.0.0 to reach it from other devices on the network, 127.0.0.1 for this machine only (or behind a tunnel such as Tailscale/SSH)."
+        },
+        "claudeQuotaBar.webServer.port": {
+          "type": "number",
+          "default": 8787,
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Port of the web page."
         }
       }
     }
