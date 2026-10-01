@@ -5,13 +5,14 @@ const os = require('os');
 const path = require('path');
 const { execFile } = require('child_process');
 const q = require('./quota');
+const web = require('./web');
 
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
 const CREDENTIALS = path.join(os.homedir(), '.claude', '.credentials.json');
 const CLI_STATE = path.join(os.homedir(), '.claude.json');
 const REDRAW_MS = 30_000; // the theoretical pace keeps moving even without a fetch
 
-let item, timer, output, state, cacheFile;
+let item, timer, output, state, cacheFile, server, serverKey, serverError;
 
 function log(msg) {
   if (output) output.appendLine(`${new Date().toISOString().slice(11, 19)} ${msg}`);
@@ -23,8 +24,12 @@ function config() {
     pollMinutes: Math.max(1, c.get('pollMinutes', 5)),
     barWidth: Math.max(4, Math.min(40, c.get('barWidth', 12))),
     showFiveHour: c.get('showFiveHour', false),
+    paceMarker: c.get('paceMarker', q.DEFAULT_MARKER) || q.DEFAULT_MARKER,
     alignment: c.get('alignment', 'right'),
     priority: c.get('priority', 100),
+    webEnabled: c.get('webServer.enabled', false),
+    webHost: c.get('webServer.host', '0.0.0.0') || '0.0.0.0',
+    webPort: c.get('webServer.port', 8787),
   };
 }
 
@@ -174,12 +179,12 @@ function render() {
   }
   const ageMs = Date.now() - (entry.fetchedAt || 0);
   const stale = ageMs > 90 * 60_000 ? ageMs : null; // past an hour and a half, the data should be flagged
-  let text = q.statusText(stats, { label: '7d', width: cfg.barWidth, staleMs: stale });
+  let text = q.statusText(stats, { label: '7d', width: cfg.barWidth, staleMs: stale, marker: cfg.paceMarker });
 
   const five = pickWindow(entry.limits, 'five_hour');
   const fiveStats = five ? q.windowStats(five, 'five_hour') : null;
   if (cfg.showFiveHour && fiveStats) {
-    text += `  ${q.statusText(fiveStats, { label: '5h', width: Math.max(4, Math.round(cfg.barWidth / 2)) })}`;
+    text += `  ${q.statusText(fiveStats, { label: '5h', width: Math.max(4, Math.round(cfg.barWidth / 2)), marker: cfg.paceMarker })}`;
   }
   item.text = text;
 
@@ -190,24 +195,98 @@ function render() {
 
   const md = new vscode.MarkdownString();
   md.appendMarkdown(`**Claude weekly quota**\n\n`);
-  md.appendMarkdown(`- Used: **${stats.used.toFixed(1)}%**\n`);
+  md.appendMarkdown(stats.expired
+    ? `- Used: **unknown**: the week reset after the last reading\n`
+    : `- Used: **${stats.used.toFixed(1)}%**\n`);
   if (stats.pace !== null) {
     md.appendMarkdown(`- Expected uniform pace: **${stats.pace.toFixed(1)}%**\n`);
-    const verdict = stats.delta < -5 ? 'below pace: you have margin'
+    const verdict = stats.delta === null ? 'no usage data since the reset'
+      : stats.delta < -5 ? 'below pace: you have margin'
       : stats.delta > 15 ? 'well above pace'
       : stats.delta > 5 ? 'above pace' : 'on pace';
-    md.appendMarkdown(`- Difference: **${stats.delta > 0 ? '+' : ''}${stats.delta.toFixed(1)} pp** — ${verdict}\n`);
+    md.appendMarkdown(stats.delta === null ? `- Difference: ${verdict}\n`
+      : `- Difference: **${stats.delta > 0 ? '+' : ''}${stats.delta.toFixed(1)} pp** — ${verdict}\n`);
     md.appendMarkdown(`- Resets in **${q.humanDuration(stats.remainingMs)}**\n`);
   }
   if (fiveStats) {
-    md.appendMarkdown(`\n**5-hour window**: ${fiveStats.used.toFixed(1)}%`
+    md.appendMarkdown(`\n**5-hour window**: ${fiveStats.used === null ? 'reset since the last reading' : `${fiveStats.used.toFixed(1)}%`}`
       + (fiveStats.pace !== null ? ` (pace ${fiveStats.pace.toFixed(0)}%, resets in ${q.humanDuration(fiveStats.remainingMs)})` : '') + '\n');
   }
   md.appendMarkdown(`\nData from ${entry.source}, updated ${q.humanAge(ageMs)} ago${stale ? ' ⚠' : ''}.`);
   if (state.error) md.appendMarkdown(`\n\nLast attempt: ${state.error}.`);
-  md.appendMarkdown(`\n\nThe fill is real usage, the \`┃\` marker is the theoretical uniform pace. Click to refresh now.`);
+  md.appendMarkdown(`\n\nThe fill is real usage, the ${cfg.paceMarker} marker is the theoretical uniform pace. Click to refresh now.`);
   item.tooltip = md;
   item.show();
+}
+
+/** What the web page shows: computed on every request, so the pace is current. */
+function snapshot() {
+  const cfg = config();
+  const entry = state.entry;
+  const out = { markerColor: web.markerColor(cfg.paceMarker), error: state.error };
+  if (!entry) return out;
+  const win = (key) => {
+    const w = pickWindow(entry.limits, key);
+    const stats = w ? q.windowStats(w, key) : null;
+    return stats && { ...stats, severity: q.severity(stats.used, stats.delta) };
+  };
+  return {
+    ...out,
+    seven_day: win('seven_day'),
+    five_hour: win('five_hour'),
+    fetchedAt: entry.fetchedAt || 0,
+    source: entry.source,
+    stale: Date.now() - (entry.fetchedAt || 0) > 90 * 60_000,
+  };
+}
+
+/** (Re)starts the web page server only when its settings actually changed. */
+function syncServer() {
+  const cfg = config();
+  const key = cfg.webEnabled ? `${cfg.webHost}:${cfg.webPort}` : null;
+  if (key === serverKey) return;
+  stopServer();
+  serverKey = key;
+  if (!key) return;
+  const srv = web.startServer({
+    host: cfg.webHost, port: cfg.webPort, snapshot, log,
+    onError: (e) => {
+      // Typically EADDRINUSE: another VS Code window already serves the page.
+      // Forget this server so the next tick retries, and takes over once
+      // that window is closed. Logged only once, not on every retry.
+      const msg = e.code === 'EADDRINUSE' ? `port ${cfg.webPort} in use, will retry` : e.message;
+      if (msg !== serverError) log(`web: ${msg}`);
+      serverError = msg;
+      if (server === srv) { server = null; serverKey = null; }
+    },
+  });
+  srv.on('listening', () => { serverError = null; });
+  server = srv;
+}
+
+function stopServer() {
+  if (server) server.close();
+  server = null;
+  serverKey = null;
+}
+
+async function showWebPage() {
+  const cfg = config();
+  if (!cfg.webEnabled) {
+    const pick = await vscode.window.showInformationMessage(
+      'The Claude quota web page is off. Turn it on? Anyone on your network will be able to see your quota percentages.',
+      'Turn on');
+    if (pick !== 'Turn on') return;
+    await vscode.workspace.getConfiguration('claudeQuotaBar')
+      .update('webServer.enabled', true, vscode.ConfigurationTarget.Global);
+  }
+  const { webHost, webPort } = config();
+  const local = ['0.0.0.0', '::'].includes(webHost) ? web.lanUrls(webPort) : [`http://${webHost}:${webPort}/`];
+  const url = local[0] || `http://localhost:${webPort}/`;
+  const pick = await vscode.window.showInformationMessage(
+    `Claude quota page: ${local.join('  ') || url}`, 'Copy URL', 'Open');
+  if (pick === 'Copy URL') await vscode.env.clipboard.writeText(url);
+  if (pick === 'Open') await vscode.env.openExternal(vscode.Uri.parse(url));
 }
 
 function schedule() {
@@ -218,6 +297,7 @@ function schedule() {
   timer = setInterval(() => {
     ticks++;
     render(); // the theoretical pace moves on its own
+    syncServer();
     if (ticks % pollEvery === 0) poll();
   }, REDRAW_MS);
 }
@@ -241,18 +321,21 @@ function activate(context) {
   context.subscriptions.push(
     item, output,
     vscode.commands.registerCommand('claudeQuotaBar.refresh', () => poll(true)),
+    vscode.commands.registerCommand('claudeQuotaBar.showWebPage', showWebPage),
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('claudeQuotaBar')) { render(); schedule(); }
+      if (e.affectsConfiguration('claudeQuotaBar')) { render(); schedule(); syncServer(); }
     }),
-    { dispose: () => timer && clearInterval(timer) },
+    { dispose: () => { if (timer) clearInterval(timer); stopServer(); } },
   );
 
   poll();
   schedule();
+  syncServer();
 }
 
 function deactivate() {
   if (timer) clearInterval(timer);
+  stopServer();
 }
 
 module.exports = { activate, deactivate };
