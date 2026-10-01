@@ -130,14 +130,16 @@ const PAGE = `<!doctype html>
       '<div class="head"><span class="label">' + title + '</span>'
       + (w.delta === null ? '' : '<span class="delta ' + w.severity + '">' + sign + Math.abs(w.delta).toFixed(1) + ' pp</span>')
       + '</div>'
-      + '<div class="pct">' + w.used.toFixed(1) + '%</div>'
-      + '<div class="track" role="img" aria-label="' + w.used.toFixed(0) + '% used'
+      + '<div class="pct">' + (w.used === null ? '—' : w.used.toFixed(1) + '%') + '</div>'
+      + '<div class="track" role="img" aria-label="' + (w.used === null ? 'usage unknown' : w.used.toFixed(0) + '% used')
       + (w.pace === null ? '' : ', uniform pace ' + w.pace.toFixed(0) + '%') + '">'
-      + '<div class="fill" style="width:' + clamp(w.used) + '%"></div>'
+      + (w.used === null ? '' : '<div class="fill" style="width:' + clamp(w.used) + '%"></div>')
       + (w.pace === null ? '' : '<div class="marker" style="left:' + clamp(w.pace) + '%"></div>')
       + '</div>'
       + '<div class="meta">'
-      + (w.pace === null ? '' : '<span>Uniform pace ' + w.pace.toFixed(1) + '%</span><span>' + VERDICT[w.severity] + '</span>')
+      + (w.expired ? '<span class="warn">Reset after the last reading: usage since then is unknown</span>' : '')
+      + (w.pace === null ? '' : '<span>Uniform pace ' + w.pace.toFixed(1) + '%</span>')
+      + (w.pace === null || w.used === null ? '' : '<span>' + VERDICT[w.severity] + '</span>')
       + (w.remainingMs === null ? '' : '<span>Resets in ' + dur(w.remainingMs) + '</span>')
       + '</div>';
   }

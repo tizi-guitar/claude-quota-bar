@@ -195,17 +195,21 @@ function render() {
 
   const md = new vscode.MarkdownString();
   md.appendMarkdown(`**Claude weekly quota**\n\n`);
-  md.appendMarkdown(`- Used: **${stats.used.toFixed(1)}%**\n`);
+  md.appendMarkdown(stats.expired
+    ? `- Used: **unknown**: the week reset after the last reading\n`
+    : `- Used: **${stats.used.toFixed(1)}%**\n`);
   if (stats.pace !== null) {
     md.appendMarkdown(`- Expected uniform pace: **${stats.pace.toFixed(1)}%**\n`);
-    const verdict = stats.delta < -5 ? 'below pace: you have margin'
+    const verdict = stats.delta === null ? 'no usage data since the reset'
+      : stats.delta < -5 ? 'below pace: you have margin'
       : stats.delta > 15 ? 'well above pace'
       : stats.delta > 5 ? 'above pace' : 'on pace';
-    md.appendMarkdown(`- Difference: **${stats.delta > 0 ? '+' : ''}${stats.delta.toFixed(1)} pp** — ${verdict}\n`);
+    md.appendMarkdown(stats.delta === null ? `- Difference: ${verdict}\n`
+      : `- Difference: **${stats.delta > 0 ? '+' : ''}${stats.delta.toFixed(1)} pp** — ${verdict}\n`);
     md.appendMarkdown(`- Resets in **${q.humanDuration(stats.remainingMs)}**\n`);
   }
   if (fiveStats) {
-    md.appendMarkdown(`\n**5-hour window**: ${fiveStats.used.toFixed(1)}%`
+    md.appendMarkdown(`\n**5-hour window**: ${fiveStats.used === null ? 'reset since the last reading' : `${fiveStats.used.toFixed(1)}%`}`
       + (fiveStats.pace !== null ? ` (pace ${fiveStats.pace.toFixed(0)}%, resets in ${q.humanDuration(fiveStats.remainingMs)})` : '') + '\n');
   }
   md.appendMarkdown(`\nData from ${entry.source}, updated ${q.humanAge(ageMs)} ago${stale ? ' ⚠' : ''}.`);
