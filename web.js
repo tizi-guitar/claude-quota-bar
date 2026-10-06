@@ -67,13 +67,13 @@ const PAGE = `<!doctype html>
   :root {
     --bg: #f6f6f4; --card: #ffffff; --text: #1f1f1f; --muted: #6b6b6b;
     --track: #e4e4e0; --fill: #8a8a86; --marker: var(--text);
-    --even: #6b6b6b; --below: #1a8f4c; --above: #b58100; --critical: #d23b3b;
+    --even: #6b6b6b; --below: #6b6b6b; --above: #b58100; --critical: #d23b3b;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #161616; --card: #1f1f1f; --text: #ececec; --muted: #9b9b9b;
       --track: #333331; --fill: #a9a9a5;
-      --even: #9b9b9b; --below: #3ccf7c; --above: #f0b429; --critical: #ff6b6b;
+      --even: #9b9b9b; --below: #9b9b9b; --above: #f0b429; --critical: #ff6b6b;
     }
   }
   * { box-sizing: border-box; }
@@ -121,6 +121,10 @@ const PAGE = `<!doctype html>
     return m + 'm';
   }
 
+  function signedDur(ms) {
+    return Math.abs(ms) < 30000 ? '0m' : (ms < 0 ? '+' : '−') + dur(Math.abs(ms));
+  }
+
   function card(el, title, w) {
     if (!w) { el.hidden = true; return; }
     el.hidden = false;
@@ -128,7 +132,7 @@ const PAGE = `<!doctype html>
     const sign = w.delta === null ? '' : w.delta > 0.5 ? '▲' : w.delta < -0.5 ? '▼' : '=';
     el.innerHTML =
       '<div class="head"><span class="label">' + title + '</span>'
-      + (w.delta === null ? '' : '<span class="delta ' + w.severity + '">' + sign + Math.abs(w.delta).toFixed(1) + ' pp</span>')
+      + (w.delta === null ? '' : '<span class="delta ' + w.severity + '">' + sign + Math.abs(w.delta).toFixed(1) + '% (' + signedDur(w.deltaMs) + ')</span>')
       + '</div>'
       + '<div class="pct">' + (w.used === null ? '—' : w.used.toFixed(1) + '%') + '</div>'
       + '<div class="track" role="img" aria-label="' + (w.used === null ? 'usage unknown' : w.used.toFixed(0) + '% used')

@@ -47,6 +47,8 @@ function windowStats(win, key, now = Date.now()) {
     remainingMs,
     expired,
     delta: pace === null || used === null ? null : used - pace,
+    // Time the uniform pace needs to catch up with usage (negative: usage is behind it).
+    deltaMs: pace === null || used === null ? null : ((used - pace) / 100) * span,
   };
 }
 
@@ -71,14 +73,17 @@ function renderBar(used, pace, width, marker = DEFAULT_MARKER) {
   return cells.join('');
 }
 
-/** 'below' | 'even' | 'above' | 'critical': drives the item's color. */
+/**
+ * 'below' | 'even' | 'above' | 'critical': drives the item's color. It depends
+ * only on the distance from the uniform pace, never on how much is used:
+ * more than 10 points over it is critical (red), 1 to 10 over is above (yellow),
+ * anything else is neutral ('below' only changes the wording, not the color).
+ */
 function severity(used, delta) {
-  if (used === null) return 'even';
-  if (used >= 90) return 'critical';
-  if (delta === null) return 'even';
-  if (delta > 15) return 'critical';
-  if (delta > 5) return 'above';
-  if (delta < -5) return 'below';
+  if (used === null || delta === null) return 'even';
+  if (delta > 10) return 'critical';
+  if (delta > 1) return 'above';
+  if (delta < -1) return 'below';
   return 'even';
 }
 
@@ -90,6 +95,12 @@ function humanDuration(ms) {
   if (d) return `${d}d${h}h`;
   if (h) return `${h}h${String(m).padStart(2, '0')}m`;
   return `${m}m`;
+}
+
+/** Signed duration, margin-style: '+5h20m' when behind pace (time in hand), '−1d3h' when ahead of it. */
+function signedDuration(ms) {
+  if (Math.abs(ms) < 30_000) return '0m';
+  return `${ms < 0 ? '+' : '−'}${humanDuration(Math.abs(ms))}`;
 }
 
 function humanAge(ms) {
@@ -106,12 +117,13 @@ function humanAge(ms) {
  * Status bar text. `staleMs` appends a ⚠ and the data's age, because an old
  * percentage read as current is worse than no data at all.
  */
-function statusText(stats, { label = '7d', width = 12, staleMs = null, marker = DEFAULT_MARKER } = {}) {
+function statusText(stats, { label = '7d', width = 12, staleMs = null, marker = DEFAULT_MARKER, equivalent = false } = {}) {
   const bar = renderBar(stats.used, stats.pace, width, marker);
   let text = `${label} ${bar} ${stats.used === null ? 'reset' : `${Math.round(stats.used)}%`}`;
   if (stats.delta !== null) {
     const sign = stats.delta < -0.5 ? '▼' : stats.delta > 0.5 ? '▲' : '=';
-    text += ` ${sign}${Math.round(Math.abs(stats.delta))}`;
+    text += ` ${sign}${Math.round(Math.abs(stats.delta))}%`;
+    if (equivalent && stats.deltaMs !== null) text += ` (${signedDuration(stats.deltaMs)})`;
   }
   if (staleMs !== null) text += ` ⚠${humanAge(staleMs)}`;
   return text;
@@ -119,5 +131,5 @@ function statusText(stats, { label = '7d', width = 12, staleMs = null, marker = 
 
 module.exports = {
   WEEK_MS, FIVE_HOUR_MS, DEFAULT_MARKER,
-  windowSpan, windowStats, renderBar, severity, humanDuration, humanAge, statusText,
+  windowSpan, windowStats, renderBar, severity, humanDuration, signedDuration, humanAge, statusText,
 };

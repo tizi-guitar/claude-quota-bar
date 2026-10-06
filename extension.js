@@ -179,7 +179,7 @@ function render() {
   }
   const ageMs = Date.now() - (entry.fetchedAt || 0);
   const stale = ageMs > 90 * 60_000 ? ageMs : null; // past an hour and a half, the data should be flagged
-  let text = q.statusText(stats, { label: '7d', width: cfg.barWidth, staleMs: stale, marker: cfg.paceMarker });
+  let text = q.statusText(stats, { label: '7d', width: cfg.barWidth, staleMs: stale, marker: cfg.paceMarker, equivalent: true });
 
   const five = pickWindow(entry.limits, 'five_hour');
   const fiveStats = five ? q.windowStats(five, 'five_hour') : null;
@@ -201,11 +201,11 @@ function render() {
   if (stats.pace !== null) {
     md.appendMarkdown(`- Expected uniform pace: **${stats.pace.toFixed(1)}%**\n`);
     const verdict = stats.delta === null ? 'no usage data since the reset'
-      : stats.delta < -5 ? 'below pace: you have margin'
-      : stats.delta > 15 ? 'well above pace'
-      : stats.delta > 5 ? 'above pace' : 'on pace';
+      : stats.delta < -1 ? 'below pace: you have margin'
+      : stats.delta > 10 ? 'well above pace'
+      : stats.delta > 1 ? 'above pace' : 'on pace';
     md.appendMarkdown(stats.delta === null ? `- Difference: ${verdict}\n`
-      : `- Difference: **${stats.delta > 0 ? '+' : ''}${stats.delta.toFixed(1)} pp** — ${verdict}\n`);
+      : `- Difference: **${stats.delta > 0 ? '+' : ''}${stats.delta.toFixed(1)} %** (**${q.signedDuration(stats.deltaMs)}**) — ${verdict}\n`);
     md.appendMarkdown(`- Resets in **${q.humanDuration(stats.remainingMs)}**\n`);
   }
   if (fiveStats) {
