@@ -2,7 +2,7 @@
   "name": "claude-quota-bar",
   "displayName": "Claude Quota Bar",
   "description": "Claude Code weekly quota in the status bar, with the theoretical uniform pace overlaid on the bar",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "TizzCode",
   "license": "MIT",
   "icon": "icon.png",

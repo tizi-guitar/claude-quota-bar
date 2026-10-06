@@ -4,7 +4,7 @@ VS Code status bar item that shows how much of your **Claude Code weekly
 quota** has been used, with the **theoretical uniform pace** overlaid on the
 same bar.
 
-    7d ████▍🟦░░░░░░ 37% ▼12
+    7d ████▍🟦░░░░░░ 37% ▼12% (+20h)
 
 - the fill `█` is the real usage of the 7-day window;
 - the 🟦 marker is where usage would be if it were perfectly uniform over
@@ -12,8 +12,13 @@ same bar.
   so it stands out from the fill whatever the theme: a status bar item has
   a single text color, and the thin `┃` used before left dark gaps on both
   sides of the line;
-- `▼12` / `▲12` is the difference in percentage points: below or above that
-  pace.
+- `▼12%` / `▲12%` is the difference in percentage points: below or above that
+  pace;
+- the time in parentheses is the same difference expressed as time: how long
+  the uniform pace needs to catch up with your usage, as a margin. `+20h`
+  means you are 20 hours ahead of the budget, `−1d3h` means you have used
+  a day and three hours more than the pace allows. It is the difference
+  times the length of the window (7 days, or 5 hours for the 5-hour one).
 
 If the fill sits to the left of the marker, you have margin; if it passes it,
 you're burning through the week faster than it allows.
@@ -64,9 +69,11 @@ derived from `resets_at` minus seven days, and refreshes every 30 seconds.
 | `claudeQuotaBar.webServer.port` | 8787 | port it listens on |
 
 Click the bar to refresh immediately. The tooltip reports usage, pace, delta,
-reset time, data age, and the 5-hour window. The background color turns
-yellow past +5 percentage points off pace, and red past +15 or above 90% of
-quota.
+reset time, data age, and the 5-hour window. The colors
+depend only on the distance from the uniform pace, never on how much quota is
+used: yellow from 1 to 10 percentage points above the pace, red beyond 10,
+neutral otherwise (also when you are below the pace). The same thresholds
+color the status bar background and the web page.
 
 ## Web page (phone, other devices)
 
@@ -78,7 +85,7 @@ through a VPN such as Tailscale; "Add to home screen" makes it one tap away.
 
 The page shows the same bar with real colors: the fill is real usage, and
 the uniform pace is a solid line in the `paceMarker` color. It also shows
-the percentages, the delta, the reset countdown and the 5-hour window, and
+the percentages, the delta (with its equivalent time), the reset countdown and the 5-hour window, and
 refreshes every 30 seconds.
 
 It reuses the data the extension has already fetched, so it doesn't add any

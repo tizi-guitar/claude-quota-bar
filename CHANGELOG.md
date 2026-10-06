@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1
+
+- New **equivalent time** next to the difference: the status bar reads
+  `▼12% (+20h)`, the tooltip and the web page show it too. It is the
+  difference converted to time (difference × window length): positive when
+  you are below the uniform pace (time in hand), negative when above it.
+- The difference now carries a `%` sign.
+- Colors depend only on the distance from the uniform pace: red beyond 10
+  points above it, yellow from 1 to 10, neutral otherwise. Having used a lot
+  of quota no longer turns the bar red by itself, and being below the pace
+  is no longer green.
+
 ## 0.2.0
 
 - The uniform-pace marker is now a colored square (🟦 by default) instead
