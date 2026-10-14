@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sostituisce "Allievo" con "[A]" nel nome dei contatti Google.
+"""Sostituisce "Allievo", "Allieva", "Alieno" e "Aliena" con "[A]" nel nome dei contatti Google.
 
 Modifica SOLO i campi del nome (nome, secondo nome, cognome, prefisso, suffisso).
 Tutti gli altri dati del contatto (telefoni, email, indirizzi, note, foto...) non
@@ -29,7 +29,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 SCOPES = ["https://www.googleapis.com/auth/contacts"]
-PATTERN = re.compile(r"\bAllievo\b", re.IGNORECASE)
+PATTERN = re.compile(r"\b(?:Allievo|Allieva|Alieno|Aliena)\b", re.IGNORECASE)
 REPLACEMENT = "[A]"
 NAME_FIELDS = ("givenName", "middleName", "familyName",
                "honorificPrefix", "honorificSuffix")
